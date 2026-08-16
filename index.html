@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  >
+
+  <title>สแกนบาร์โค้ดสินค้า</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111827;
+      color: #ffffff;
+      font-family: Arial, Tahoma, sans-serif;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: auto;
+      padding: 15px;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 10px 0 15px;
+    }
+
+    #status {
+      text-align: center;
+      padding: 12px;
+      font-size: 16px;
+    }
+
+    #reader {
+      width: 100%;
+      background: #000000;
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      border: 0;
+      border-radius: 12px;
+      margin-top: 15px;
+      background: #dc2626;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .manual {
+      margin-top: 15px;
+      background: #1f2937;
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
+    .send-button {
+      background: #16a34a;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h2>📷 สแกนบาร์โค้ดสินค้า</h2>
+
+    <div id="status">
+      กำลังเตรียมกล้อง...
+    </div>
+
+    <div id="reader"></div>
+
+    <div class="manual">
+
+      <div>กรณีกล้องสแกนไม่ได้ สามารถกรอกรหัสเอง</div>
+
+      <input
+        id="manualBarcode"
+        type="text"
+        placeholder="กรอก Barcode"
+      >
+
+      <button
+        class="send-button"
+        onclick="sendManualBarcode()"
+      >
+        ส่งรหัสสินค้า
+      </button>
+
+    </div>
+
+    <button onclick="closeCamera()">
+      ปิดกล้อง
+    </button>
+
+  </div>
+
+
+  <script>
+
+    let scanner = null;
+    let scanned = false;
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const returnOrigin =
+      params.get('returnOrigin');
+
+
+    async function startScanner() {
+
+      const status =
+        document.getElementById('status');
+
+      try {
+
+        status.innerText =
+          'กรุณาอนุญาตให้ใช้งานกล้อง';
+
+        scanner =
+          new Html5Qrcode('reader');
+
+
+        /*
+         * เริ่มด้วย environment
+         * เพื่อเลือกกล้องหลังมือถือเป็นหลัก
+         */
+        await scanner.start(
+
+          {
+            facingMode: {
+              exact: 'environment'
+            }
+          },
+
+          {
+            fps: 10,
+
+            qrbox: function(
+              viewfinderWidth,
+              viewfinderHeight
+            ) {
+
+              const width =
+                Math.min(
+                  350,
+                  viewfinderWidth * 0.9
+                );
+
+              const height =
+                Math.min(
+                  180,
+                  viewfinderHeight * 0.45
+                );
+
+              return {
+                width: width,
+                height: height
+              };
+            }
+
+          },
+
+          onScanSuccess,
+
+          function() {}
+
+        );
+
+        status.innerText =
+          '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
+
+      }
+      catch (error) {
+
+        console.error(error);
+
+        /*
+         * หากเลือกกล้องหลังแบบ exact ไม่สำเร็จ
+         * ลองเปิดกล้องทั่วไป
+         */
+        try {
+
+          scanner =
+            new Html5Qrcode('reader');
+
+          await scanner.start(
+
+            {
+              facingMode: 'environment'
+            },
+
+            {
+              fps: 10,
+              qrbox: {
+                width: 300,
+                height: 150
+              }
+            },
+
+            onScanSuccess,
+
+            function() {}
+
+          );
+
+          status.innerText =
+            '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
+
+        }
+        catch (error2) {
+
+          console.error(error2);
+
+          status.innerText =
+            '❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตสิทธิ์ Camera ในเบราว์เซอร์';
+
+        }
+
+      }
+
+    }
+
+
+    async function onScanSuccess(
+      decodedText
+    ) {
+
+      if (scanned) return;
+
+      scanned = true;
+
+      document
+        .getElementById('status')
+        .innerText =
+        '✅ สแกนสำเร็จ: ' +
+        decodedText;
+
+      await stopScanner();
+
+      sendBarcode(decodedText);
+
+    }
+
+
+    function sendManualBarcode() {
+
+      const barcode =
+        document
+          .getElementById('manualBarcode')
+          .value
+          .trim();
+
+      if (!barcode) {
+
+        alert(
+          'กรุณากรอก Barcode'
+        );
+
+        return;
+
+      }
+
+      scanned = true;
+
+      stopScanner();
+
+      sendBarcode(barcode);
+
+    }
+
+
+    function sendBarcode(barcode) {
+
+      if (
+        window.opener &&
+        returnOrigin
+      ) {
+
+        window.opener.postMessage(
+          {
+            type: 'STOCK_BARCODE',
+            barcode: barcode
+          },
+          returnOrigin
+        );
+
+        setTimeout(
+          function() {
+            window.close();
+          },
+          500
+        );
+
+      }
+      else {
+
+        document
+          .getElementById('status')
+          .innerText =
+          'Barcode: ' + barcode;
+
+      }
+
+    }
+
+
+    async function stopScanner() {
+
+      try {
+
+        if (scanner) {
+
+          const state =
+            scanner.getState();
+
+          if (
+            state === Html5QrcodeScannerState.SCANNING ||
+            state === Html5QrcodeScannerState.PAUSED
+          ) {
+
+            await scanner.stop();
+
+          }
+
+        }
+
+      }
+      catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+
+    async function closeCamera() {
+
+      await stopScanner();
+
+      window.close();
+
+    }
+
+
+    startScanner();
+
+  </script>
+
+</body>
+</html>
