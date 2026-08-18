@@ -122,258 +122,268 @@
 
   <script>
 
-    let scanner = null;
-    let scanned = false;
+let scanner = null;
+let scanned = false;
 
-    const params =
-      new URLSearchParams(
-        window.location.search
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const returnUrl =
+  params.get('returnUrl');
+
+
+async function startScanner() {
+
+  const status =
+    document.getElementById('status');
+
+  try {
+
+    status.innerText =
+      'กำลังเปิดกล้อง... กรุณาอนุญาตการใช้กล้อง';
+
+    scanner =
+      new Html5Qrcode('reader');
+
+
+    await scanner.start(
+
+      {
+        facingMode: {
+          ideal: 'environment'
+        }
+      },
+
+      {
+        fps: 10,
+
+        qrbox: function(
+          viewfinderWidth,
+          viewfinderHeight
+        ) {
+
+          const width =
+            Math.min(
+              350,
+              viewfinderWidth * 0.9
+            );
+
+          const height =
+            Math.min(
+              180,
+              viewfinderHeight * 0.45
+            );
+
+          return {
+            width: width,
+            height: height
+          };
+
+        }
+
+      },
+
+      onScanSuccess,
+
+      function() {}
+
+    );
+
+
+    status.innerText =
+      '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
+
+
+  } catch (error) {
+
+    console.log(error);
+
+    try {
+
+      scanner =
+        new Html5Qrcode('reader');
+
+
+      await scanner.start(
+
+        {
+          facingMode: 'environment'
+        },
+
+        {
+          fps: 10,
+          qrbox: {
+            width: 300,
+            height: 150
+          }
+        },
+
+        onScanSuccess,
+
+        function() {}
+
       );
 
-    const returnOrigin =
-      params.get('returnOrigin');
+
+      status.innerText =
+        '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
 
 
-    async function startScanner() {
+    } catch (error2) {
 
-      const status =
-        document.getElementById('status');
+      console.log(error2);
 
-      try {
-
-        status.innerText =
-          'กรุณาอนุญาตให้ใช้งานกล้อง';
-
-        scanner =
-          new Html5Qrcode('reader');
-
-
-        /*
-         * เริ่มด้วย environment
-         * เพื่อเลือกกล้องหลังมือถือเป็นหลัก
-         */
-        await scanner.start(
-
-          {
-            facingMode: {
-              exact: 'environment'
-            }
-          },
-
-          {
-            fps: 10,
-
-            qrbox: function(
-              viewfinderWidth,
-              viewfinderHeight
-            ) {
-
-              const width =
-                Math.min(
-                  350,
-                  viewfinderWidth * 0.9
-                );
-
-              const height =
-                Math.min(
-                  180,
-                  viewfinderHeight * 0.45
-                );
-
-              return {
-                width: width,
-                height: height
-              };
-            }
-
-          },
-
-          onScanSuccess,
-
-          function() {}
-
-        );
-
-        status.innerText =
-          '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
-
-      }
-      catch (error) {
-
-        console.error(error);
-
-        /*
-         * หากเลือกกล้องหลังแบบ exact ไม่สำเร็จ
-         * ลองเปิดกล้องทั่วไป
-         */
-        try {
-
-          scanner =
-            new Html5Qrcode('reader');
-
-          await scanner.start(
-
-            {
-              facingMode: 'environment'
-            },
-
-            {
-              fps: 10,
-              qrbox: {
-                width: 300,
-                height: 150
-              }
-            },
-
-            onScanSuccess,
-
-            function() {}
-
-          );
-
-          status.innerText =
-            '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
-
-        }
-        catch (error2) {
-
-          console.error(error2);
-
-          status.innerText =
-            '❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตสิทธิ์ Camera ในเบราว์เซอร์';
-
-        }
-
-      }
+      status.innerText =
+        '❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตให้เว็บไซต์ใช้กล้อง';
 
     }
 
+  }
 
-    async function onScanSuccess(
-      decodedText
+}
+
+
+async function onScanSuccess(decodedText) {
+
+  if (scanned) return;
+
+  scanned = true;
+
+
+  document
+    .getElementById('status')
+    .innerText =
+    '✅ สแกนสำเร็จ กำลังกลับหน้าจอนับ...';
+
+
+  await stopScanner();
+
+
+  setTimeout(
+    function() {
+
+      returnToStockPage(
+        decodedText
+      );
+
+    },
+    500
+  );
+
+}
+
+
+function sendManualBarcode() {
+
+  const barcode =
+    document
+      .getElementById('manualBarcode')
+      .value
+      .trim();
+
+
+  if (!barcode) {
+
+    alert(
+      'กรุณากรอกรหัสสินค้า'
+    );
+
+    return;
+
+  }
+
+
+  scanned = true;
+
+  returnToStockPage(barcode);
+
+}
+
+
+function returnToStockPage(barcode) {
+
+  if (!returnUrl) {
+
+    document
+      .getElementById('status')
+      .innerText =
+      '❌ ไม่พบ URL สำหรับกลับหน้าจอนับ';
+
+    return;
+
+  }
+
+
+  const separator =
+    returnUrl.includes('?')
+      ? '&'
+      : '?';
+
+
+  const targetUrl =
+    returnUrl +
+    separator +
+    'barcode=' +
+    encodeURIComponent(barcode);
+
+
+  // กลับไปหน้าระบบนับโดยตรง
+  window.location.replace(
+    targetUrl
+  );
+
+}
+
+
+async function stopScanner() {
+
+  try {
+
+    if (!scanner) return;
+
+
+    const state =
+      scanner.getState();
+
+
+    if (
+      state === Html5QrcodeScannerState.SCANNING ||
+      state === Html5QrcodeScannerState.PAUSED
     ) {
 
-      if (scanned) return;
-
-      scanned = true;
-
-      document
-        .getElementById('status')
-        .innerText =
-        '✅ สแกนสำเร็จ: ' +
-        decodedText;
-
-      await stopScanner();
-
-      sendBarcode(decodedText);
+      await scanner.stop();
 
     }
 
+  } catch (error) {
 
-    function sendManualBarcode() {
+    console.log(error);
 
-      const barcode =
-        document
-          .getElementById('manualBarcode')
-          .value
-          .trim();
+  }
 
-      if (!barcode) {
-
-        alert(
-          'กรุณากรอก Barcode'
-        );
-
-        return;
-
-      }
-
-      scanned = true;
-
-      stopScanner();
-
-      sendBarcode(barcode);
-
-    }
+}
 
 
-    function sendBarcode(barcode) {
+async function closeCamera() {
 
-      if (
-        window.opener &&
-        returnOrigin
-      ) {
-
-        window.opener.postMessage(
-          {
-            type: 'STOCK_BARCODE',
-            barcode: barcode
-          },
-          returnOrigin
-        );
-
-        setTimeout(
-          function() {
-            window.close();
-          },
-          500
-        );
-
-      }
-      else {
-
-        document
-          .getElementById('status')
-          .innerText =
-          'Barcode: ' + barcode;
-
-      }
-
-    }
+  await stopScanner();
 
 
-    async function stopScanner() {
+  if (returnUrl) {
 
-      try {
+    window.location.href =
+      returnUrl;
 
-        if (scanner) {
+  }
 
-          const state =
-            scanner.getState();
-
-          if (
-            state === Html5QrcodeScannerState.SCANNING ||
-            state === Html5QrcodeScannerState.PAUSED
-          ) {
-
-            await scanner.stop();
-
-          }
-
-        }
-
-      }
-      catch (error) {
-
-        console.log(error);
-
-      }
-
-    }
+}
 
 
-    async function closeCamera() {
+startScanner();
 
-      await stopScanner();
-
-      window.close();
-
-    }
-
-
-    startScanner();
-
-  </script>
+</script>
 
 </body>
 </html>
