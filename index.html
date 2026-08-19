@@ -3,178 +3,176 @@
 
 <head>
 
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-  >
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+>
 
-  <title>สแกนบาร์โค้ดสินค้า</title>
-
-
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<title>สแกน Barcode</title>
 
 
-  <style>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-    * {
-      box-sizing: border-box;
-    }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #172033;
-      color: white;
-      font-family:
-        Arial,
-        "Noto Sans Thai",
-        sans-serif;
-      padding: 20px;
-    }
+<style>
 
-    .container {
-      max-width: 600px;
-      margin: auto;
-    }
+* {
+  box-sizing: border-box;
+}
 
-    h1 {
-      text-align: center;
-      font-size: 25px;
-      margin-bottom: 12px;
-    }
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #111827;
+  color: white;
+}
 
-    #status {
-      text-align: center;
-      padding: 15px;
-      background: #243044;
-      border-radius: 12px;
-      margin-bottom: 18px;
-      font-size: 16px;
-    }
+.container {
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+}
 
-    #reader {
-      width: 100%;
-      background: black;
-      border-radius: 14px;
-      overflow: hidden;
-    }
+h1 {
+  text-align: center;
+  font-size: 24px;
+}
 
-    .manual {
-      margin-top: 20px;
-      padding: 16px;
-      background: #243044;
-      border-radius: 14px;
-    }
+p {
+  text-align: center;
+  color: #CBD5E1;
+}
 
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
+#reader {
+  width: 100%;
+  background: #000;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-top: 20px;
+}
 
-    input {
-      width: 100%;
-      padding: 15px;
-      font-size: 18px;
-      border-radius: 10px;
-      border: 0;
-      margin-bottom: 12px;
-    }
+.status {
+  margin-top: 15px;
+  padding: 15px;
+  background: #1E293B;
+  border-radius: 12px;
+  text-align: center;
+}
 
-    button {
-      width: 100%;
-      padding: 16px;
-      border: 0;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
+.manual-box {
+  margin-top: 20px;
+  padding: 18px;
+  background: #1E293B;
+  border-radius: 15px;
+}
 
-    .send {
-      background: #16a34a;
-      color: white;
-    }
+input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  border: none;
+  font-size: 18px;
+  margin-top: 10px;
+}
 
-    .close {
-      background: #dc2626;
-      color: white;
-    }
+button {
+  width: 100%;
+  padding: 17px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+}
 
-  </style>
+.btn-send {
+  background: #16A34A;
+  color: white;
+}
+
+.btn-close {
+  background: #DC2626;
+  color: white;
+}
+
+</style>
 
 </head>
+
 
 <body>
 
 <div class="container">
 
-  <h1>
-    📷 สแกนบาร์โค้ดสินค้า
-  </h1>
+  <h1>📷 สแกน Barcode</h1>
 
-
-  <div id="status">
-    กำลังเตรียมกล้อง...
-  </div>
+  <p>
+    กรุณาอนุญาตให้เว็บไซต์ใช้กล้องเมื่อ iPhone แสดงข้อความขอสิทธิ์
+  </p>
 
 
   <div id="reader"></div>
 
 
-  <div class="manual">
+  <div id="status" class="status">
+    กำลังเตรียมกล้อง...
+  </div>
 
-    <label>
-      หากสแกนไม่ได้ สามารถกรอกรหัสเอง
-    </label>
 
+  <div class="manual-box">
+
+    <strong>กรณีกล้องสแกนไม่ได้ สามารถกรอกรหัสสินค้าได้</strong>
 
     <input
-      type="text"
       id="manualBarcode"
+      type="text"
       placeholder="กรอกรหัสสินค้า"
       autocomplete="off"
     >
 
 
     <button
-      class="send"
-      type="button"
+      class="btn-send"
       onclick="sendManualBarcode()"
     >
       ส่งรหัสสินค้า
     </button>
 
+
+    <button
+      class="btn-close"
+      onclick="closeCameraPage()"
+    >
+      กลับหน้าระบบนับ
+    </button>
+
   </div>
-
-
-  <button
-    class="close"
-    type="button"
-    onclick="closeCamera()"
-  >
-    ปิดกล้อง
-  </button>
 
 </div>
 
 
 <script>
 
-let scanner = null;
+let html5QrCode = null;
+
+let scannerStarted = false;
+
 let scanned = false;
 
 
+/**
+ * อ่าน URL
+ */
 const params =
   new URLSearchParams(
     window.location.search
   );
 
 
-const returnUrl =
+const RETURN_URL =
   params.get('returnUrl');
 
 
@@ -187,62 +185,93 @@ async function startScanner() {
     document.getElementById('status');
 
 
+  if (!RETURN_URL) {
+
+    status.innerHTML =
+      '❌ ไม่พบ URL สำหรับกลับไปหน้าระบบนับ';
+
+    return;
+  }
+
+
   try {
 
-    status.textContent =
-      '📷 กรุณาอนุญาตให้เว็บไซต์ใช้กล้อง';
+    status.innerHTML =
+      '📷 กำลังเปิดกล้อง...';
 
 
-    scanner =
+    html5QrCode =
       new Html5Qrcode('reader');
 
 
-    await scanner.start(
+    const cameras =
+      await Html5Qrcode.getCameras();
 
-      {
-        facingMode: {
-          ideal: 'environment'
-        }
-      },
+
+    if (!cameras || cameras.length === 0) {
+
+      status.innerHTML =
+        '❌ ไม่พบกล้องบนอุปกรณ์นี้';
+
+      return;
+    }
+
+
+    let selectedCamera =
+      cameras[0].id;
+
+
+    // พยายามเลือกกล้องหลัง
+    const backCamera =
+      cameras.find(function(camera) {
+
+        const label =
+          String(camera.label || '')
+            .toLowerCase();
+
+        return (
+          label.includes('back') ||
+          label.includes('rear') ||
+          label.includes('environment')
+        );
+
+      });
+
+
+    if (backCamera) {
+      selectedCamera = backCamera.id;
+    }
+
+
+    await html5QrCode.start(
+
+      selectedCamera,
 
       {
         fps: 10,
 
-        qrbox: function(
-          viewfinderWidth,
-          viewfinderHeight
-        ) {
+        qrbox: {
+          width: 250,
+          height: 150
+        },
 
-          const width =
-            Math.min(
-              viewfinderWidth * 0.9,
-              350
-            );
-
-          const height =
-            Math.min(
-              viewfinderHeight * 0.5,
-              180
-            );
-
-          return {
-            width: width,
-            height: height
-          };
-
-        }
-
+        aspectRatio: 1.7778
       },
 
       onScanSuccess,
 
-      function() {}
+      function() {
+        // ไม่ต้องทำอะไรเมื่อยังอ่าน Barcode ไม่ได้
+      }
 
     );
 
 
-    status.textContent =
-      '📦 หันกล้องไปที่บาร์โค้ดสินค้า';
+    scannerStarted = true;
+
+
+    status.innerHTML =
+      '✅ เปิดกล้องแล้ว กรุณาหันกล้องไปที่ Barcode';
 
 
   } catch (error) {
@@ -250,18 +279,19 @@ async function startScanner() {
     console.error(error);
 
 
-    status.textContent =
-      '❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตให้เว็บไซต์ใช้กล้อง';
+    status.innerHTML =
+      '❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตให้เว็บไซต์ใช้กล้อง หรือกรอกรหัสสินค้าด้านล่าง';
 
+
+    scannerStarted = false;
   }
-
 }
 
 
 /**
  * เมื่อสแกนสำเร็จ
  */
-async function onScanSuccess(decodedText) {
+function onScanSuccess(decodedText) {
 
   if (scanned) {
     return;
@@ -271,28 +301,65 @@ async function onScanSuccess(decodedText) {
   scanned = true;
 
 
-  document
-    .getElementById('status')
-    .textContent =
-    '✅ สแกนสำเร็จ กำลังกลับหน้าจอนับ...';
+  document.getElementById('status').innerHTML =
+    '✅ สแกนสำเร็จ: ' + decodedText;
 
 
-  await stopScanner();
+  if (
+    html5QrCode &&
+    scannerStarted
+  ) {
+
+    html5QrCode
+      .stop()
+      .catch(function(error) {
+        console.log(error);
+      });
+
+  }
 
 
   setTimeout(function() {
 
-    returnToStockPage(
-      decodedText
-    );
+    returnToStockPage(decodedText);
 
-  }, 500);
+  }, 400);
 
 }
 
 
 /**
- * กรอกรหัสเอง
+ * ส่ง Barcode กลับ Apps Script
+ */
+function returnToStockPage(barcode) {
+
+  if (!RETURN_URL) {
+
+    alert('ไม่พบ URL สำหรับกลับไปหน้าระบบนับ');
+
+    return;
+  }
+
+
+  const separator =
+    RETURN_URL.includes('?')
+      ? '&'
+      : '?';
+
+
+  window.location.href =
+    RETURN_URL +
+    separator +
+    'barcode=' +
+    encodeURIComponent(
+      String(barcode).trim()
+    );
+
+}
+
+
+/**
+ * ส่งรหัสที่กรอกเอง
  */
 function sendManualBarcode() {
 
@@ -305,105 +372,25 @@ function sendManualBarcode() {
 
   if (!barcode) {
 
-    alert(
-      'กรุณากรอกรหัสสินค้า'
-    );
+    alert('กรุณากรอกรหัสสินค้า');
 
     return;
-
   }
 
 
-  scanned = true;
-
-
-  stopScanner()
-    .finally(function() {
-
-      returnToStockPage(
-        barcode
-      );
-
-    });
-
+  returnToStockPage(barcode);
 }
 
 
 /**
  * กลับหน้าระบบนับ
  */
-function returnToStockPage(barcode) {
+function closeCameraPage() {
 
-  if (!returnUrl) {
-
-    document
-      .getElementById('status')
-      .textContent =
-      '❌ ไม่พบ URL สำหรับกลับหน้าระบบนับ';
-
-    return;
-
-  }
-
-
-  const separator =
-    returnUrl.includes('?')
-      ? '&'
-      : '?';
-
-
-  const targetUrl =
-    returnUrl +
-    separator +
-    'barcode=' +
-    encodeURIComponent(
-      String(barcode).trim()
-    );
-
-
-  window.location.replace(
-    targetUrl
-  );
-
-}
-
-
-/**
- * หยุดกล้อง
- */
-async function stopScanner() {
-
-  try {
-
-    if (scanner) {
-
-      await scanner.stop();
-
-      scanner.clear();
-
-    }
-
-  } catch (error) {
-
-    console.log(error);
-
-  }
-
-}
-
-
-/**
- * ปิดกล้อง
- */
-async function closeCamera() {
-
-  await stopScanner();
-
-
-  if (returnUrl) {
+  if (RETURN_URL) {
 
     window.location.href =
-      returnUrl;
+      RETURN_URL;
 
   } else {
 
@@ -415,7 +402,7 @@ async function closeCamera() {
 
 
 /**
- * เริ่ม
+ * เริ่มทำงาน
  */
 window.addEventListener(
   'load',
