@@ -7,321 +7,333 @@
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  content="width=device-width, initial-scale=1, maximum-scale=1"
 >
 
 <title>สแกน Barcode</title>
 
-
 <script src="https://unpkg.com/html5-qrcode"></script>
-
 
 <style>
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
-  background: #111827;
+  padding: 15px;
+  background: #101827;
   color: white;
-  font-family: Arial, "Noto Sans Thai", sans-serif;
+  font-family: Arial, sans-serif;
 }
 
 .container {
-  max-width: 700px;
+  max-width: 600px;
   margin: auto;
-  padding: 20px;
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 10px;
-}
-
-.message {
-  text-align: center;
-  color: #cbd5e1;
-  margin-bottom: 20px;
 }
 
 #reader {
   width: 100%;
+  margin-top: 15px;
+  background: white;
+  border-radius: 10px;
   overflow: hidden;
-  border-radius: 16px;
-  background: #000;
+}
+
+.message {
+  text-align: center;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 8px;
+  background: #243247;
 }
 
 button {
   width: 100%;
-  min-height: 60px;
-  margin-top: 15px;
-  border: none;
-  border-radius: 14px;
-  font-size: 20px;
+  border: 0;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 10px;
+  font-size: 16px;
   font-weight: bold;
+}
+
+.green {
+  background: #13a64b;
   color: white;
 }
 
-#startButton {
-  background: #16a34a;
+.red {
+  background: #e3222a;
+  color: white;
 }
 
-#closeButton {
-  background: #dc2626;
-}
-
-.status {
-  margin-top: 20px;
-  padding: 15px;
-  background: #1f2937;
-  border-radius: 12px;
-  text-align: center;
-  line-height: 1.6;
-}
-
-.success {
-  background: #14532d;
-}
-
-.error {
-  background: #7f1d1d;
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 10px;
 }
 
 </style>
 
 </head>
 
-
 <body>
 
 <div class="container">
 
-  <h1>📷 สแกน Barcode</h1>
+<h1>📷 สแกน Barcode</h1>
 
-  <div class="message">
-    กดปุ่มด้านล่างเพื่ออนุญาตและเปิดกล้อง
-  </div>
+<div
+  id="message"
+  class="message"
+>
+กำลังเตรียมกล้อง...
+</div>
 
+<div id="reader"></div>
 
-  <button
-    id="startButton"
-    type="button"
-  >
-    📷 เริ่มเปิดกล้อง
-  </button>
+<input
+  id="manual"
+  type="text"
+  placeholder="กรอก Barcode เองกรณีสแกนไม่ได้"
+>
 
+<button
+  class="green"
+  onclick="manualSearch()"
+>
+ค้นหารหัสสินค้า
+</button>
 
-  <div id="reader"></div>
-
-
-  <div
-    class="status"
-    id="status"
-  >
-    กรุณากด “เริ่มเปิดกล้อง”
-  </div>
-
-
-  <button
-    id="closeButton"
-    type="button"
-    onclick="closeScanner()"
-  >
-    ✖ ยกเลิก
-  </button>
+<button
+  class="red"
+  onclick="backToSystem()"
+>
+กลับหน้าระบบนับ
+</button>
 
 </div>
 
 
 <script>
 
-let html5QrCode = null;
+let scanner = null;
 
-let scannerStarted = false;
+let returnUrl = '';
 
-
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
+let alreadyScanned = false;
 
 
-const returnUrl =
-  params.get('returnUrl');
+/************************************************
+ * LOAD
+ ************************************************/
+window.addEventListener(
+  'load',
+  function() {
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    returnUrl =
+      params.get('return') || '';
+
+    startScanner();
+
+  }
+);
 
 
-function setStatus(message, type) {
+/************************************************
+ * START CAMERA
+ ************************************************/
+function startScanner() {
 
-  const status =
-    document.getElementById('status');
-
-  status.textContent = message;
-
-  status.className =
-    'status ' + (type || '');
-
-}
+  scanner =
+    new Html5Qrcode(
+      'reader'
+    );
 
 
-document
-  .getElementById('startButton')
-  .addEventListener('click', startScanner);
+  const config = {
+
+    fps: 10,
+
+    qrbox: {
+      width: 280,
+      height: 160
+    },
+
+    aspectRatio: 1.7777778
+
+  };
 
 
-async function startScanner() {
+  scanner
+    .start(
 
-  const startButton =
-    document.getElementById('startButton');
-
-  startButton.disabled = true;
-
-  startButton.textContent =
-    'กำลังเปิดกล้อง...';
-
-
-  setStatus(
-    'กำลังขออนุญาตใช้กล้อง กรุณากด “อนุญาต” เมื่อระบบถาม',
-    ''
-  );
-
-
-  try {
-
-    html5QrCode =
-      new Html5Qrcode('reader');
-
-
-    const config = {
-      fps: 10,
-      qrbox: {
-        width: 280,
-        height: 180
+      {
+        facingMode: {
+          exact: 'environment'
+        }
       },
-      aspectRatio: 1.777778
-    };
 
+      config,
 
-    // พยายามเปิดกล้องหลัง
-    try {
+      onScanSuccess,
 
-      await html5QrCode.start(
-        {
-          facingMode: {
-            exact: 'environment'
-          }
-        },
-        config,
-        onScanSuccess,
-        onScanFailure
-      );
+      function(errorMessage) {
+        // ไม่ต้องแสดง error ทุกเฟรม
+      }
 
-    } catch (firstError) {
+    )
 
-      // ถ้าเครื่องไม่มี environment
-      await html5QrCode.start(
-        {
-          facingMode: 'environment'
-        },
-        config,
-        onScanSuccess,
-        onScanFailure
-      );
+    .then(
+      function() {
 
-    }
+        setMessage(
+          '🟢 เปิดกล้องแล้ว กรุณาหันกล้องไปที่ Barcode'
+        );
 
+      }
+    )
 
-    scannerStarted = true;
+    .catch(
+      function(error) {
 
+        /*
+         * ลองแบบ environment อีกครั้ง
+         */
+        scanner
+          .start(
+            {
+              facingMode: 'environment'
+            },
 
-    setStatus(
-      '✓ เปิดกล้องแล้ว กรุณานำ Barcode มาไว้ในกรอบสแกน',
-      'success'
+            config,
+
+            onScanSuccess,
+
+            function() {}
+          )
+
+          .then(
+            function() {
+
+              setMessage(
+                '🟢 เปิดกล้องแล้ว กรุณาสแกน Barcode'
+              );
+
+            }
+          )
+
+          .catch(
+            function(err) {
+
+              setMessage(
+                '❌ ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตให้เว็บไซต์เข้าถึงกล้อง'
+              );
+
+              console.error(err);
+            }
+          );
+      }
     );
-
-
-    startButton.style.display =
-      'none';
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    startButton.disabled = false;
-
-    startButton.textContent =
-      '📷 ลองเปิดกล้องอีกครั้ง';
-
-
-    setStatus(
-      '❌ ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบว่าอนุญาตให้ Safari ใช้กล้องแล้ว',
-      'error'
-    );
-
-  }
-
 }
 
 
-function onScanSuccess(decodedText) {
+/************************************************
+ * SCAN SUCCESS
+ ************************************************/
+function onScanSuccess(
+  decodedText
+) {
 
-  if (!decodedText) {
+  if (alreadyScanned) {
     return;
   }
 
-
-  if (!scannerStarted) {
-    return;
-  }
+  alreadyScanned = true;
 
 
-  scannerStarted = false;
+  const barcode =
+    String(decodedText)
+      .trim();
 
 
-  setStatus(
-    '✓ สแกนสำเร็จ: ' + decodedText,
-    'success'
+  setMessage(
+    '✅ สแกนได้: ' +
+    barcode
   );
 
 
-  if (html5QrCode) {
+  if (scanner) {
 
-    html5QrCode
+    scanner
       .stop()
-      .then(function() {
-
-        returnBarcode(decodedText);
-
-      })
-      .catch(function() {
-
-        returnBarcode(decodedText);
-
-      });
-
-  } else {
-
-    returnBarcode(decodedText);
-
+      .catch(
+        function() {}
+      );
   }
 
+
+  /*
+   * กลับ Apps Script
+   */
+  goBack(
+    barcode
+  );
 }
 
 
-function onScanFailure(error) {
-  // ไม่ต้องแสดง Error ทุกเฟรม
+/************************************************
+ * MANUAL
+ ************************************************/
+function manualSearch() {
+
+  const barcode =
+    document
+      .getElementById(
+        'manual'
+      )
+      .value
+      .trim();
+
+
+  if (!barcode) {
+
+    setMessage(
+      'กรุณากรอก Barcode'
+    );
+
+    return;
+  }
+
+
+  goBack(
+    barcode
+  );
 }
 
 
-function returnBarcode(barcode) {
+/************************************************
+ * BACK
+ ************************************************/
+function goBack(
+  barcode
+) {
 
   if (!returnUrl) {
 
-    setStatus(
-      'ไม่พบ URL สำหรับกลับไปหน้านับ',
-      'error'
+    setMessage(
+      'ไม่พบ URL สำหรับกลับหน้าระบบ'
     );
 
     return;
@@ -334,47 +346,47 @@ function returnBarcode(barcode) {
       : '?';
 
 
-  const targetUrl =
+  window.location.href =
     returnUrl +
     separator +
     'barcode=' +
-    encodeURIComponent(barcode);
+    encodeURIComponent(
+      barcode
+    );
+}
+
+
+/************************************************
+ * BACK WITHOUT BARCODE
+ ************************************************/
+function backToSystem() {
+
+  if (!returnUrl) {
+
+    window.history.back();
+
+    return;
+  }
 
 
   window.location.href =
-    targetUrl;
-
+    returnUrl;
 }
 
 
-function closeScanner() {
+/************************************************
+ * MESSAGE
+ ************************************************/
+function setMessage(
+  text
+) {
 
-  if (html5QrCode && scannerStarted) {
-
-    html5QrCode
-      .stop()
-      .catch(function() {})
-      .finally(function() {
-        goBack();
-      });
-
-  } else {
-
-    goBack();
-
-  }
-
-}
-
-
-function goBack() {
-
-  if (returnUrl) {
-    window.location.href = returnUrl;
-  } else {
-    window.history.back();
-  }
-
+  document
+    .getElementById(
+      'message'
+    )
+    .textContent =
+    text;
 }
 
 </script>
